@@ -1,0 +1,53 @@
+:: This is a comment.
+:: Detailed docs available here:
+:: https://tyson-swetnam.github.io/porder/projects/idlist/
+
+:: The goal of this *.txt file is to download Planet
+:: PlanetScope Scene 4band 3B data for
+:: a user provided date range and AOI geometry.
+:: This tool downloads the analytic asset / bundle type.
+
+:: The AOI geometry must be a simplified geojson
+:: (square or rectangle is best)
+
+:: porder must already be setup with API key
+:: in a dedicated Anaconda virtual environment
+:: The user runs the commands in that Anaconda
+:: virtual environment
+
+:: Requirements for Anaconda Virtual Environment
+:: >conda create -n (porder_env) python=3.7
+:: >conda activate (porder_env)
+:: >conda install gdal pyproj shapely fiona geopandas
+:: >conda/pip install porder
+:: >porder quota
+
+:: Order of commands / processes
+:: Geometry Helper commands
+:: 0.) porder convert --source (shapefile) --destination (geojson)
+:: 0.) porder simplify --input (geojson) --output (reduced geojson) --number (# of reduced vertices)
+:: Actual Planet Data Download API commands
+:: 1.) porder idlist
+:: 2.) porder idsplit
+:: 3.) porder bundles --item "PSScene4Band"
+:: Creates the order on the Planet API (takes time to actually process)
+:: 4.) porder order
+:: Async Download of order made once order url is obtained/ready
+:: 5.) porder multiproc
+
+porder idlist --input "my.geojson" --start 2020-07-01 --end 2020-07-31 --item "PSScene4Band" --asset "analytic" or "basic_analytic" --outfile "my_output_idlist.csv"
+
+porder idsplit --idlist "my_output_idlist.csv" --lines 100 --local "C:\my_output_idlist_split_folder"
+
+:: likely want the analytic or basic_analytic bundle (this has changed from when I used the API)
+:: only need to do this once
+porder bundles --item "PSScene4Band"
+
+
+porder order --name "my_unique_order_name" --item "PSScene4Band" --idlist "C:my/path/to/split/idlist" --bundle "analytic" or "basic_analytic" --boundary "my.geojson"
+
+:: When porder is executed it will copy a Planet Order Url to your clipboard
+porder multiproc --url (paste above order url) --local "C:\my_download_folder_path"
+
+:: On small orders (i.e. only a few months of images) this is a fast process.
+
